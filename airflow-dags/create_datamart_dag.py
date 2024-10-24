@@ -24,8 +24,7 @@ def _create_dm_tables():
             lpg NUMERIC(8, 6) NOT NULL,
             smoke NUMERIC(10, 8) NOT NULL,
             temperature NUMERIC(5, 1) NOT NULL,
-            light NUMERIC(5, 2) NOT NULL,
-            PRIMARY KEY (timestamp, device_id)
+            light NUMERIC(5, 2) NOT NULL
         );
         """,
 
@@ -42,8 +41,7 @@ def _create_dm_tables():
             max_smoke NUMERIC(10, 8) NOT NULL,
             min_smoke NUMERIC(10, 8) NOT NULL,
             max_temperature NUMERIC(5, 1) NOT NULL,
-            min_temperature NUMERIC(5, 1) NOT NULL,
-            PRIMARY KEY (timestamp, device_id)
+            min_temperature NUMERIC(5, 1) NOT NULL
         );
         """,
 
@@ -51,8 +49,7 @@ def _create_dm_tables():
         CREATE TABLE IF NOT EXISTS dm_iot_count (
             timestamp TIMESTAMP NOT NULL,
             device_id VARCHAR(17) NOT NULL,
-            record_count INT NOT NULL,
-            PRIMARY KEY (timestamp, device_id)
+            record_count INT NOT NULL
         );
         """,
 
@@ -102,9 +99,7 @@ def _create_dm_tables():
             high_low_percentage_humidity NUMERIC(5, 1) NOT NULL,
             high_low_percentage_lpg NUMERIC(8, 6) NOT NULL,
             high_low_percentage_smoke NUMERIC(10, 8) NOT NULL,
-            high_low_percentage_temperature NUMERIC(5, 1) NOT NULL,
-
-            PRIMARY KEY (timestamp, device_id)
+            high_low_percentage_temperature NUMERIC(5, 1) NOT NULL
         );
         """
     ]

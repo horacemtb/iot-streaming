@@ -191,7 +191,7 @@ def _extract_and_process_data_from_s3():
 with DAG(
     dag_id='s3_to_dds_dag',
     schedule_interval='*/15 * * * *',
-    start_date=datetime(2023, 1, 1),
+    start_date=datetime(2024, 10, 18),
     catchup=False,
     max_active_runs=1,
 ) as dag:
