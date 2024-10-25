@@ -120,11 +120,11 @@ def _extract_and_process_data_from_s3():
             df['timestamp'] = pd.to_datetime(df['timestamp'], errors='coerce')
             df = df.dropna(subset=['timestamp'])
 
-            # Take a slice of data strictly less than the latest timestamp from the DataFrame rounded down to the nearest minute
-            max_timestamp_in_df = df['timestamp'].max()
-            df = df[(df['timestamp'] > latest_timestamp) & (df['timestamp'] < max_timestamp_in_df.floor('min'))]
-
             combined_df = pd.concat([combined_df, df], ignore_index=True)
+
+        # Take a slice of data strictly less than the latest timestamp from the DataFrame rounded down to the nearest minute
+        max_timestamp_in_df = combined_df['timestamp'].max()
+        combined_df = combined_df[(combined_df['timestamp'] > latest_timestamp) & (combined_df['timestamp'] < max_timestamp_in_df.floor('min'))]
 
         combined_df = combined_df.sort_values(by='timestamp').reset_index(drop=True)
 

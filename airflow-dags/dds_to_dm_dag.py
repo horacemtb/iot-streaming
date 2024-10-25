@@ -12,37 +12,37 @@ DDS_CONN_ID = 'postgres_iot_dds'
 DATAMART_CONN_ID = 'postgres_iot_datamart'
 DATAMART_TABLES = {
     'dm_iot_average': [
-        'timestamp', 'device_id', 'co', 'humidity', 
+        'timestamp', 'device_id', 'co', 'humidity',
         'lpg', 'smoke', 'temperature', 'light'
     ],
     'dm_iot_extreme': [
-        'timestamp', 'device_id', 
-        'max_co', 'min_co', 
-        'max_humidity', 'min_humidity', 
-        'max_lpg', 'min_lpg', 
-        'max_smoke', 'min_smoke', 
+        'timestamp', 'device_id',
+        'max_co', 'min_co',
+        'max_humidity', 'min_humidity',
+        'max_lpg', 'min_lpg',
+        'max_smoke', 'min_smoke',
         'max_temperature', 'min_temperature'
     ],
     'dm_iot_count': [
         'timestamp', 'device_id', 'record_count'
     ],
     'dm_iot_ml': [
-        'timestamp', 'device_id', 
-        'mean_co', 'median_co', 'variance_co', 
-        'mean_humidity', 'median_humidity', 'variance_humidity', 
-        'mean_lpg', 'median_lpg', 'variance_lpg', 
-        'mean_smoke', 'median_smoke', 'variance_smoke', 
-        'mean_temperature', 'median_temperature', 'variance_temperature', 
-        'co_change_last_hour', 'humidity_change_last_hour', 
-        'lpg_change_last_hour', 'smoke_change_last_hour', 
-        'temperature_change_last_hour', 
-        'co_to_humidity_ratio', 'smoke_to_temperature_ratio', 
-        'lpg_to_co_ratio', 
-        'variance_to_mean_co', 'variance_to_mean_humidity', 
-        'variance_to_mean_lpg', 'variance_to_mean_smoke', 
-        'variance_to_mean_temperature', 
-        'high_low_percentage_co', 'high_low_percentage_humidity', 
-        'high_low_percentage_lpg', 'high_low_percentage_smoke', 
+        'timestamp', 'device_id',
+        'mean_co', 'median_co', 'variance_co',
+        'mean_humidity', 'median_humidity', 'variance_humidity',
+        'mean_lpg', 'median_lpg', 'variance_lpg',
+        'mean_smoke', 'median_smoke', 'variance_smoke',
+        'mean_temperature', 'median_temperature', 'variance_temperature',
+        'co_change_last_hour', 'humidity_change_last_hour',
+        'lpg_change_last_hour', 'smoke_change_last_hour',
+        'temperature_change_last_hour',
+        'co_to_humidity_ratio', 'smoke_to_temperature_ratio',
+        'lpg_to_co_ratio',
+        'variance_to_mean_co', 'variance_to_mean_humidity',
+        'variance_to_mean_lpg', 'variance_to_mean_smoke',
+        'variance_to_mean_temperature',
+        'high_low_percentage_co', 'high_low_percentage_humidity',
+        'high_low_percentage_lpg', 'high_low_percentage_smoke',
         'high_low_percentage_temperature'
     ]
 }
@@ -198,7 +198,7 @@ def generate_ml_features(df):
     ml_features['smoke_change_last_hour'] = ml_features.groupby('device_id')['mean_smoke'].diff()
     ml_features['temperature_change_last_hour'] = ml_features.groupby('device_id')['mean_temperature'].diff()
 
-    # Calculate ratios and variance-to-mean ratios    
+    # Calculate ratios and variance-to-mean ratios
     ml_features['co_to_humidity_ratio'] = ml_features['mean_co'] / ml_features['mean_humidity']
     ml_features['smoke_to_temperature_ratio'] = ml_features['mean_smoke'] / ml_features['mean_temperature']
     ml_features['lpg_to_co_ratio'] = ml_features['mean_lpg'] / ml_features['mean_co']
@@ -211,8 +211,8 @@ def generate_ml_features(df):
     # Calculate high/low percentage for each variable
     for variable in ['co', 'humidity', 'lpg', 'smoke', 'temperature']:
         high_low_percentage = df.groupby([pd.Grouper(key='timestamp', freq='H'), 'device_id'])[variable].apply(
-            lambda x: (x > x.median()).sum() / len(x) * 100).reset_index(name=f'high_low_percentage_{variable}')
-        
+            lambda x: (x > x.mean()).sum() / len(x) * 100).reset_index(name=f'high_low_percentage_{variable}')
+
         # Merge back into ml_features
         ml_features = ml_features.merge(high_low_percentage, on=['timestamp', 'device_id'], how='left')
 
@@ -243,7 +243,7 @@ def remove_duplicates(table_name, postgres_hook):
         log.error(f"Error deleting duplicates from table {table_name}: {str(e)}")
         raise
 
-    
+
 def insert_into_datamart(df, table_name, columns):
     """
     Insert a DataFrame into a specified datamart table.
@@ -267,15 +267,15 @@ def insert_into_datamart(df, table_name, columns):
         log.error(f"Error inserting data into PostgreSQL: {e}")
         raise
 
-    
+
 def _process_data():
     """
     Main function to process data from the DDS to the datamart.
 
     This function retrieves the latest date from the datamart,
-    loads the corresponding data from the DDS, filters the data 
-    for complete hours, and generates various features (average, 
-    extreme, count, and ML features) before inserting them into 
+    loads the corresponding data from the DDS, filters the data
+    for complete hours, and generates various features (average,
+    extreme, count, and ML features) before inserting them into
     their respective tables in the datamart.
     """
     try:
@@ -296,20 +296,20 @@ def _process_data():
         extreme_df = generate_extreme_features(dds_df)
         insert_into_datamart(extreme_df, 'dm_iot_extreme', DATAMART_TABLES['dm_iot_extreme'])
 
-        # Generate count features from the filtered DataFrame and insert into the 'dm_iot_count' table   
+        # Generate count features from the filtered DataFrame and insert into the 'dm_iot_count' table
         count_df = generate_count_features(dds_df)
         insert_into_datamart(count_df, 'dm_iot_count', DATAMART_TABLES['dm_iot_count'])
 
         # Generate ML features from the filtered DataFrame and insert into the 'dm_iot_ml' table
         ml_features_df = generate_ml_features(dds_df)
         insert_into_datamart(ml_features_df, 'dm_iot_ml', DATAMART_TABLES['dm_iot_ml'])
-        
+
         log.info("Data processing completed successfully.")
     except Exception as e:
         log.error(f"Error in data processing: {e}")
         raise
 
-    
+
 with DAG(
     dag_id='dds_to_dm_dag',
     schedule_interval='@hourly',
