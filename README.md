@@ -29,7 +29,7 @@ Setup instructions, configuration guidelines, and command-line commands required
 
 1. Ensure you have two virtual machines deployed in Yandex Cloud:
 
-![Alt text]()
+![Alt text](https://github.com/horacemtb/iot-streaming/blob/main/images/YandexCloud%20VMs.png)
 
 2. Configure Airflow for DAG Execution:
 
@@ -47,9 +47,8 @@ sudo python3 -m pip install boto3 python-dotenv
 
 - Configure PostgreSQL connections in the Airflow UI, as illustrated below:
 
-![Alt text]()
-
-![Alt text]()
+![Alt text](https://github.com/horacemtb/iot-streaming/blob/main/images/airflow_dds_connection.png)
+![Alt text](https://github.com/horacemtb/iot-streaming/blob/main/images/airflow_dm_connection.png)
 
 3. Set Up Main Services on dmitry-de VM:
 
@@ -79,16 +78,16 @@ CREATE DATABASE datamart_iot_database;
 
 - Confirm that MinIO is running on the specified port:
 
-![Alt text]()
+![Alt text](https://github.com/horacemtb/iot-streaming/blob/main/images/minio.png)
 
 - Configure NiFi as demonstrated in the screenshots below:
 
-![Alt text]()
-![Alt text]()
-![Alt text]()
-![Alt text]()
-![Alt text]()
-![Alt text]()
+![Alt text](https://github.com/horacemtb/iot-streaming/blob/main/images/ni-fi.png)
+![Alt text](https://github.com/horacemtb/iot-streaming/blob/main/images/ni-fi_listenhttp_config.png)
+![Alt text](https://github.com/horacemtb/iot-streaming/blob/main/images/ni-fi_mergecontent_config.png)
+![Alt text](https://github.com/horacemtb/iot-streaming/blob/main/images/ni-fi_executescript_config.png)
+![Alt text](https://github.com/horacemtb/iot-streaming/blob/main/images/ni-fi_updateattribute_config.png)
+![Alt text](https://github.com/horacemtb/iot-streaming/blob/main/images/ni-fi_puts3object_config.png)
 
 4. Initialize Data Pipeline:
 
@@ -115,13 +114,13 @@ python3 generate_real_data.py --csv_file raw-data/iot_telemetry_data.csv --url h
 
 6. Verify Data Processing and Visualization:
 
-![Alt text]()
+![Alt text](https://github.com/horacemtb/iot-streaming/blob/main/images/send_real_data.png)
 
 - Ensure the Airflow DAGs have completed successfully according to the defined schedule:
 
-![Alt text]()
-![Alt text]()
+![Alt text](https://github.com/horacemtb/iot-streaming/blob/main/images/s3_to_dds_dag.png)
+![Alt text](https://github.com/horacemtb/iot-streaming/blob/main/images/dds_to_dm_dag.png)
 
 - Open the Metabase UI to confirm that data from the DataMart tables has been loaded correctly:
 
-![Alt text]()
+![Alt text](https://github.com/horacemtb/iot-streaming/blob/main/images/metabase_connected.png)
