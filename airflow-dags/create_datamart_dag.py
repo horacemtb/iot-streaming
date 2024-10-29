@@ -19,10 +19,10 @@ def _create_dm_tables():
         CREATE TABLE IF NOT EXISTS dm_iot_average (
             timestamp TIMESTAMP NOT NULL,
             device_id VARCHAR(17) NOT NULL,
-            co NUMERIC(10, 8) NOT NULL,
+            co NUMERIC(12, 10) NOT NULL,
             humidity NUMERIC(5, 1) NOT NULL,
-            lpg NUMERIC(8, 6) NOT NULL,
-            smoke NUMERIC(10, 8) NOT NULL,
+            lpg NUMERIC(12, 10) NOT NULL,
+            smoke NUMERIC(12, 10) NOT NULL,
             temperature NUMERIC(5, 1) NOT NULL,
             light NUMERIC(5, 2) NOT NULL
         );
@@ -32,14 +32,14 @@ def _create_dm_tables():
         CREATE TABLE IF NOT EXISTS dm_iot_extreme (
             timestamp TIMESTAMP NOT NULL,
             device_id VARCHAR(17) NOT NULL,
-            max_co NUMERIC(10, 8) NOT NULL,
-            min_co NUMERIC(10, 8) NOT NULL,
+            max_co NUMERIC(12, 10) NOT NULL,
+            min_co NUMERIC(12, 10) NOT NULL,
             max_humidity NUMERIC(5, 1) NOT NULL,
             min_humidity NUMERIC(5, 1) NOT NULL,
-            max_lpg NUMERIC(8, 6) NOT NULL,
-            min_lpg NUMERIC(8, 6) NOT NULL,
-            max_smoke NUMERIC(10, 8) NOT NULL,
-            min_smoke NUMERIC(10, 8) NOT NULL,
+            max_lpg NUMERIC(12, 10) NOT NULL,
+            min_lpg NUMERIC(12, 10) NOT NULL,
+            max_smoke NUMERIC(12, 10) NOT NULL,
+            min_smoke NUMERIC(12, 10) NOT NULL,
             max_temperature NUMERIC(5, 1) NOT NULL,
             min_temperature NUMERIC(5, 1) NOT NULL
         );
@@ -59,47 +59,47 @@ def _create_dm_tables():
             device_id VARCHAR(17) NOT NULL,
 
             -- Statistical features
-            mean_co NUMERIC(10, 8) NOT NULL,
-            median_co NUMERIC(10, 8) NOT NULL,
-            variance_co NUMERIC(10, 8) NOT NULL,
+            mean_co NUMERIC(12, 10) NOT NULL,
+            median_co NUMERIC(12, 10) NOT NULL,
+            variance_co NUMERIC(12, 10) NOT NULL,
             mean_humidity NUMERIC(5, 1) NOT NULL,
             median_humidity NUMERIC(5, 1) NOT NULL,
-            variance_humidity NUMERIC(5, 1) NOT NULL,
-            mean_lpg NUMERIC(8, 6) NOT NULL,
-            median_lpg NUMERIC(8, 6) NOT NULL,
-            variance_lpg NUMERIC(8, 6) NOT NULL,
-            mean_smoke NUMERIC(10, 8) NOT NULL,
-            median_smoke NUMERIC(10, 8) NOT NULL,
-            variance_smoke NUMERIC(10, 8) NOT NULL,
+            variance_humidity NUMERIC(5, 2) NOT NULL,
+            mean_lpg NUMERIC(12, 10) NOT NULL,
+            median_lpg NUMERIC(12, 10) NOT NULL,
+            variance_lpg NUMERIC(12, 10) NOT NULL,
+            mean_smoke NUMERIC(12, 10) NOT NULL,
+            median_smoke NUMERIC(12, 10) NOT NULL,
+            variance_smoke NUMERIC(12, 10) NOT NULL,
             mean_temperature NUMERIC(5, 1) NOT NULL,
             median_temperature NUMERIC(5, 1) NOT NULL,
-            variance_temperature NUMERIC(5, 1) NOT NULL,
+            variance_temperature NUMERIC(5, 2) NOT NULL,
 
             -- Change over the last hour for all continuous variables
-            co_change_last_hour NUMERIC(10, 8) NULL,
+            co_change_last_hour NUMERIC(12, 10) NULL,
             humidity_change_last_hour NUMERIC(5, 1) NULL,
-            lpg_change_last_hour NUMERIC(8, 6) NULL,
-            smoke_change_last_hour NUMERIC(10, 8) NULL,
+            lpg_change_last_hour NUMERIC(12, 10) NULL,
+            smoke_change_last_hour NUMERIC(12, 10) NULL,
             temperature_change_last_hour NUMERIC(5, 1) NULL,
 
             -- Ratios between variables
-            co_to_humidity_ratio NUMERIC(10, 8) NOT NULL,
-            smoke_to_temperature_ratio NUMERIC(10, 8) NOT NULL,
-            lpg_to_co_ratio NUMERIC(10, 8) NOT NULL,
+            co_to_humidity_ratio NUMERIC(12, 10) NOT NULL,
+            smoke_to_temperature_ratio NUMERIC(12, 10) NOT NULL,
+            lpg_to_co_ratio NUMERIC(12, 10) NOT NULL,
 
             -- Variance-to-mean ratios for each variable
-            variance_to_mean_co NUMERIC(10, 8) NOT NULL,
-            variance_to_mean_humidity NUMERIC(5, 1) NOT NULL,
-            variance_to_mean_lpg NUMERIC(8, 6) NOT NULL,
-            variance_to_mean_smoke NUMERIC(10, 8) NOT NULL,
-            variance_to_mean_temperature NUMERIC(5, 1) NOT NULL,
+            variance_to_mean_co NUMERIC(12, 10) NOT NULL,
+            variance_to_mean_humidity NUMERIC(12, 10) NOT NULL,
+            variance_to_mean_lpg NUMERIC(12, 10) NOT NULL,
+            variance_to_mean_smoke NUMERIC(12, 10) NOT NULL,
+            variance_to_mean_temperature NUMERIC(12, 10) NOT NULL,
 
             -- Percentage of high/low readings
-            high_low_percentage_co NUMERIC(10, 8) NOT NULL,
-            high_low_percentage_humidity NUMERIC(5, 1) NOT NULL,
-            high_low_percentage_lpg NUMERIC(8, 6) NOT NULL,
-            high_low_percentage_smoke NUMERIC(10, 8) NOT NULL,
-            high_low_percentage_temperature NUMERIC(5, 1) NOT NULL
+            high_low_percentage_co NUMERIC(5, 2) NOT NULL,
+            high_low_percentage_humidity NUMERIC(5, 2) NOT NULL,
+            high_low_percentage_lpg NUMERIC(5, 2) NOT NULL,
+            high_low_percentage_smoke NUMERIC(5, 2) NOT NULL,
+            high_low_percentage_temperature NUMERIC(5, 2) NOT NULL
         );
         """
     ]

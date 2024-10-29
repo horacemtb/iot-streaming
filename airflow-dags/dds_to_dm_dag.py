@@ -307,7 +307,7 @@ def _process_data():
         log.info("Data processing completed successfully.")
     except Exception as e:
         log.error(f"Error in data processing: {e}")
-        raise
+        return
 
 
 with DAG(

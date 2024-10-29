@@ -14,10 +14,10 @@ def _create_dds_table():
     CREATE TABLE IF NOT EXISTS dds_iot_data (
         timestamp TIMESTAMP NOT NULL,
         device_id VARCHAR(17) NOT NULL,
-        co NUMERIC(10, 8) NOT NULL,
+        co NUMERIC(12, 10) NOT NULL,
         humidity NUMERIC(5, 1) NOT NULL,
-        lpg NUMERIC(8, 6) NOT NULL,
-        smoke NUMERIC(10, 8) NOT NULL,
+        lpg NUMERIC(12, 10) NOT NULL,
+        smoke NUMERIC(12, 10) NOT NULL,
         temperature NUMERIC(5, 1) NOT NULL,
         light SMALLINT NOT NULL CHECK (light IN (0, 1))
     );
