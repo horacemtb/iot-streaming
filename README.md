@@ -1,5 +1,8 @@
-# iot-streaming
-Data Engineering project. Work in progress!
+[Русский](README.ru.md)
+
+# IoT Data Processing Pipeline Using the ELT Workflow
+
+__Project Goal__: Develop a system for streaming ingestion, processing, storage, and visualization of IoT telemetry data. Data is collected in real time using Apache NiFi, stored in MinIO object storage, and loaded into PostgreSQL for analytical processing. Apache Airflow orchestrates data processing and transformations, while PGAdmin and Metabase enable easy access, analysis, and visualization, providing users with structured insights for further exploration.
 
 ## Data source
 
@@ -15,7 +18,89 @@ An overview of the project’s architecture, illustrating data flow from ingesti
 
 A detailed breakdown of each component in the pipeline, including their individual roles in the data ingestion, processing, storage, and visualization stages.
 
-....................
+1. __dmitry-airflow Virtual Machine__
+
+- __Role__: Orchestration and Processing Hosting
+- __Description__:
+    - __Deployment__: This virtual machine hosts the Airflow service and is responsible for orchestrating data workflows in the pipeline.
+    - __Functionality__: dmitry-airflow serves as the primary orchestration point for all scheduled data processing. Airflow DAGs on this VM coordinate data retrieval from MinIO, data transformation, and loading into PostgreSQL.
+    - __Configuration__: Airflow connects to both MinIO and PostgreSQL using environment-specific hooks to execute scheduled tasks, maintaining the flow of data from raw ingestion to processed storage.
+
+2. __dmitry-de Virtual Machine__
+
+- __Role__: Data Ingestion, Storage, and Visualization Hosting
+- __Description__:
+    - __Deployment__: This VM hosts the services for data ingestion, storage, and visualization, including NiFi, MinIO, PostgreSQL, PGAdmin, and Metabase, all containerized within Docker.
+    - __Functionality__: The dmitry-de VM manages the initial data ingestion from IoT devices, object storage via MinIO, and data warehousing with PostgreSQL. It also runs Metabase for visualizing processed data.
+    - __Configuration__: Each service on this VM operates within its Docker container, with Docker Compose ensuring streamlined deployment, start-up, and maintenance. Service credentials and configurations are managed within Docker to maintain secure and consistent settings across restarts.
+
+3. __Apache NiFi__
+
+- __Role__: Data Ingestion and Preprocessing
+- __Description__:
+    - __Deployment__: NiFi runs on the dmitry-de virtual machine within a Docker container.
+    - __Functionality__: NiFi ingests real-time IoT data using its ListenHTTP processor, which accepts incoming data from IoT devices. It preprocesses this data by merging records with the MergeContent processor and storing the results in MinIO using the PutS3Object processor.
+    - __Configuration__: NiFi is configured to handle high-throughput data ingestion, with each processor customized to control data batch size and upload frequency to MinIO. Timestamps generated in NiFi help in organizing data files stored in MinIO for easy retrieval and tracking.
+
+4. __MinIO__
+
+- __Role__: Raw Data Object Storage
+- __Description__:
+    - __Deployment__: MinIO runs as a containerized service on the dmitry-de virtual machine.
+    - __Functionality__: MinIO provides an S3-compatible storage layer for handling large volumes of IoT data. It receives batch files from NiFi and stores them in the txt format, making them easily accessible for Airflow processing.
+    - __Configuration__: Data files in MinIO are timestamped and organized by ingestion time, allowing Airflow DAGs to retrieve the latest files efficiently for further processing. MinIO’s interface allows for easy management and scaling to handle significant storage needs.
+
+5. __Apache Airflow__
+
+- __Role__: Workflow Orchestration and Scheduling
+- __Description__:
+    - __Deployment__: Airflow runs on the dmitry-airflow virtual machine.
+    - __Functionality__: Airflow automates and schedules data processing workflows by running custom DAGs that manage the flow of IoT data from raw ingestion to structured storage in PostgreSQL.
+    - __DAGs__:
+        - __create_dds_dag__ and __create_datamart_dag__: These DAGs initialize the PostgreSQL environment by creating tables for the DDS (dds_iot_database) and Datamart (datamart_iot_database) layers, structuring the databases for efficient data storage and analysis.
+        - __drop_dds_dag__ and __drop_datamart_dag__: These DAGs remove all of the tables from the DDS (dds_iot_database) and Datamart (datamart_iot_database) layers
+        - __s3_to_dds_dag__: This DAG periodically retrieves raw IoT data files from MinIO, processes and aggregates the data, and loads it into the DDS layer in PostgreSQL, organizing data for easy querying.
+        - __dds_to_dm_dag__: This DAG runs after the data has been moved to the DDS layer, further processing and aggregating it into the Datamart tables for analytics-ready format.
+    - __Tables__:
+        - __DDS Layer (dds_iot_database)__: Stores detailed, timestamped data for each IoT reading, enabling granular historical analysis.
+        - __Datamart Layer (datamart_iot_database)__: Contains pre-aggregated tables:
+            - dm_iot_average (average metrics per variable by hour),
+            - dm_iot_extreme (extreme values by hour),
+            - dm_iot_count (record counts by hour),
+            - dm_iot_ml (ML-ready statistical features by hour).
+    - __Configuration__: Each DAG is configured to run at specific intervals, with s3_to_dds_dag and dds_to_dm_dag ensuring timely ingestion and transformation of new data. Connection hooks for MinIO and PostgreSQL streamline data transfer and enable efficient automation of all pipeline stages.
+
+6. __PostgreSQL__
+
+- __Role__: Data Warehouse
+- __Description__:
+    - __Deployment__: PostgreSQL runs in a Docker container on the dmitry-de virtual machine.
+    - __Functionality__: PostgreSQL stores processed IoT data, divided into dds_iot_database for detailed data storage and datamart_iot_database for aggregated analytical and ML data. This layered structure supports efficient querying and historical analysis.
+    - __Configuration__: Tables are organized for easy querying and reporting, with specific aggregations for hourly data. PostgreSQL is optimized for fast access to historical data, supporting both analytics and visualization needs.
+
+7. __PGAdmin__
+
+- __Role__: Database Management Interface
+- __Description__:
+    - __Deployment__: Runs in a Docker container on the dmitry-de VM.
+    - __Functionality__: PGAdmin provides a web-based interface to manage, query, and inspect PostgreSQL databases. Users can visually manage both the DDS and Datamart databases, run SQL queries, and inspect data tables for validation and reporting.
+    - __Configuration__: PGAdmin is connected to PostgreSQL on the same VM, allowing convenient access for database management and debugging through a dedicated web interface.
+
+8. __Metabase__
+
+- __Role__: Data Visualization
+- __Description__:
+    - __Deployment__: Metabase is containerized and runs on the dmitry-de virtual machine.
+    - __Functionality__: Metabase enables interactive data visualization, allowing users to explore the aggregated IoT data stored in the PostgreSQL datamart. Custom dashboards provide insights into trends and metrics, with options for filtering by device_id and time range.
+    - __Configuration__: Metabase connects directly to the datamart_iot_database in PostgreSQL, pulling pre-aggregated data tables for efficient, real-time visualizations. Dashboards are set up for easy access, enabling stakeholders to monitor and interpret IoT data.
+
+9. __Docker__
+
+- __Role__: Containerization and Service Management
+- __Description__:
+    - __Deployment__: Docker runs on both the dmitry-de and dmitry-airflow virtual machines, containerizing NiFi, MinIO, PostgreSQL, and Metabase on the dmitry-de VM.
+    - __Functionality__: Docker isolates each service, ensuring consistent environments and simplifying management, scaling, and deployment. Docker Compose is used to orchestrate multi-container services, allowing easy startup, shutdown, and maintenance.
+    - __Configuration__: Each container has its own configuration settings in Docker Compose, which manages environment variables, storage settings, and network configurations.
 
 ## Pipeline
 
