@@ -1,5 +1,189 @@
 # Конвейер обработки данных IoT с использованием ELT-пайплайна
 
-__Цель проекта__: Создание системы для потоковой загрузки, обработки, хранения и визуализации телеметрических данных IoT. Данные собираются в реальном времени с помощью Apache NiFi, сохраняются в хранилище объектов MinIO и загружаются в PostgreSQL для последующей аналитической обработки. Apache Airflow оркестрирует этапы обработки данных и их преобразование, а PGAdmin и Metabase позволяют легко анализировать и визуализировать результаты, предоставляя пользователям доступ к структурированной информации для дальнейших исследований.
+__Цель проекта__: Разработать систему для сбора, обработки, хранения и визуализации телеметрических данных IoT. Данные собираются в реальном времени с помощью Apache NiFi, хранятся в объектном хранилище MinIO и загружаются в хранилище данных PostgreSQL для аналитической обработки. Apache Airflow оркестрирует процессы обработки и преобразования данных, а PGAdmin и Metabase обеспечивают анализ и визуализацию агрегированных данных.
 
-Будет дополнено...
+## Источник данных
+
+https://www.kaggle.com/datasets/garystafford/environmental-sensor-data-132k
+
+## Архитектура
+
+Схема архитектуры проекта, иллюстрирующая жизненный цикл данных от сбора до хранения, анализа и визуализаций.
+
+...........................
+
+## Компоненты системы
+
+Детальное описание каждого компонента конвейера обработки данных.
+
+1. __Виртуальная машина dmitry-airflow__
+
+- __Роль__: Хостинг Airflow для оркестрации обработки данных
+- __Развертывание__: Yandex Compute Cloud.
+- __Описание__: Выполняет DAG-и Airflow, которые извлекают сырые данные из MinIO, обрабатывают их и сохраняют в слоях DDS и Datamart в БД PostgreSQL. DAG-и запускаются каждые 15 и 60 минут. Для подключения к MinIO используется библиотека boto3, для подключения к PostgreSQL — PostgresHooks.
+
+2. __Виртуальная машина dmitry-de__
+
+- __Роль__: Хостинг NiFi, MinIO, PostgreSQL, PGAdmin и Metabase для сбора, хранения и визуализации данных
+- __Развертывание__: Yandex Compute Cloud.
+- __Описание__: Управляет сбором данных с IoT-устройств через NiFi. Отвечает за хранение сырых данных в MinIO и обработанных данных в PostgreSQL. Обеспечивает возможность построения дашбордов в Metabase. Каждый сервис работает в Docker-контейнере. Для взаимодействия сервисов используется Docker Compose.
+
+3. __Apache NiFi__
+
+- __Роль__: Сбор сырых данных и деление их на батчи
+- __Развертывание__: Запущен как Docker-контейнер на виртуальной машине dmitry-de.
+- __Описание__: Принимает поток данных IoT через процессор ListenHTTP. Данные предварительно обрабатываются с помощью процессора MergeContent для объединения записей в батчи по 1000. Процессоры ExecuteScript и UpdateAttribute используются для задания имени каждой группы на основе временной метки. Обработанные данные сохраняются в MinIO через процессор PutS3Object.
+
+4. __MinIO__
+
+- __Роль__: Объектное хранилище для сырых данных
+- __Развертывание__: Запущен как Docker-контейнер на виртуальной машине dmitry-de.
+- __Описание__: Предоставляет масштабируемое хранилище, совместимое с S3, для больших объемов данных IoT, хранящихся в виде txt файлов с временными метками. Файлы организованы по времени поступления, что обеспечивает эффективный доступ и обработку данных в Airflow.
+
+5. __Apache Airflow__
+
+- __Роль__: Оркестрация и планирование процессов обработки данных
+- __Развертывание__: Запущен на виртуальной машине dmitry-airflow.
+- __Описание__: Оркестрирует и планирует процессы обработки данных IoT, с помощью которых они поступают из озера данных в DDS и Datamart слои DWH на основе PostgreSQL. Основные DAG-и включают::
+    - __create_dds_dag__ и __create_datamart_dag__: Инициализируют таблицы слоёв DDS (dds_iot_database) и Datamart (datamart_iot_database) в PostgreSQL.
+    - __drop_dds_dag__ и __drop_datamart_dag__: Удаляют все таблицы слоёв DDS и Datamart.
+    - __s3_to_dds_dag__: Запускается каждые 15 минут для извлечения данных из MinIO, агрегирует данные по минутам и загружает их в слой DDS.
+    - __dds_to_dm_dag__: Запускается каждый час для извлечения данных из слоя DDS, обработки и почасовой агрегации, переноса данных в таблицы слоя Datamart для анализа и визуализации.
+
+6. __PostgreSQL__
+
+- __Роль__: Хранилище данных
+- __Развертывание__: Запущен как Docker-контейнер на виртуальной машине dmitry-de.
+- __Описание__: Хранит и обработанные данные IoT в структурированном виде, разделяя их на слои DDS и Datamart для эффективного выполнения запросов и визуализации:
+    - __Слой DDS (dds_iot_database)__: Хранит данные с минутной детализацией для исторического анализа.
+    - __Слой Datamart (datamart_iot_database)__: Содержит почасовые агрегаты для пользователей, включая:
+        - dm_iot_average: Средние значения переменных за час.
+        - dm_iot_extreme: Минимальные и максимальные значения за час.
+        - dm_iot_count: Количество записей за час.
+        - dm_iot_ml: Статистические признаки, подготовленные для моделей машинного обучения.
+
+7. __PGAdmin__
+
+- __Роль__: Интерфейс для управления базой данных
+- __Развертывание__: Запущен как Docker-контейнер на виртуальной машине dmitry-de.
+- __Описание__: Веб-интерфейс для управления и выполнения запросов к PostgreSQL. Позволяет визуально проверять таблицы DDS и Datamart на предмет корректности наполнения, а также выполнять SQL-запросы.
+
+8. __Metabase__
+
+- __Роль__: Визуализация данных
+- __Развертывание__: Запущен как Docker-контейнер на виртуальной машине dmitry-de.
+- __Описание__: Подключается напрямую к базе данных datamart_iot_database в PostgreSQL, используя агрегированные таблицы данных для визуализации. Дашборды предоставляют аналитику по данным IoT.
+
+9. __Docker__
+
+- __Роль__: Контейнеризация и управление сервисами
+- __Развертывание__: Запущен на виртуальной машине dmitry-de.
+- __Описание__: Isolates each service and provides configuration consistency. Managed by Docker Compose, which configures container interactions and ensures reproducible deployments across services.
+
+## Конвейер
+
+Пошаговое описание процесса обработки данных, от сбора сырых данных до преобразований и визуализаций.
+
+...........................
+
+## Настройки и команды
+
+Инструкции по установке и команды для инициализации и управления каждым компонентом конвейера данных.
+
+1. Убедитесь, что у вас развернуты две виртуальные машины в Yandex Cloud:
+
+![Alt text](https://github.com/horacemtb/iot-streaming/blob/main/images/YandexCloud%20VMs.png)
+
+2. Настройте Airflow для выполнения DAG-ов:
+
+На виртуальной машине dmitry-airflow:
+
+- Скопируйте DAG-и из папки airflow-dags в папку /dags на виртуальной машине.
+
+- Установите необходимые библиотеки:
+
+```
+sudo python3 -m pip install boto3 python-dotenv
+```
+
+- Настройте подключение к S3, добавив переменные окружения в файл airflow-dags/.env.
+
+- Настройте соединения с PostgreSQL в интерфейсе Airflow, как показано на скриншотах:
+
+![Alt text](https://github.com/horacemtb/iot-streaming/blob/main/images/airflow_dds_connection.png)
+![Alt text](https://github.com/horacemtb/iot-streaming/blob/main/images/airflow_dm_connection.png)
+
+3. Настройте основные сервисы на виртуальной машине dmitry-de:
+
+- Добавьте креды в файл docker-compose.
+
+- Разверните контейнеры (команда ниже требуется только при первом запуске):
+
+```
+docker-compose up -d
+```
+
+- Для последующих запусков используйте команды для включения и остановки контейнеров без потери данных:
+
+```
+docker-compose start
+docker-compose stop
+```
+
+- Зайдите в командную строку контейнера PostgreSQL и создайте две базы данных:
+
+```
+docker exec -it postgres psql -U ... -d postgres
+CREATE DATABASE dds_iot_database;
+CREATE DATABASE datamart_iot_database;
+\q
+```
+
+- Убедитесь, что MinIO запущен на указанном порту:
+
+![Alt text](https://github.com/horacemtb/iot-streaming/blob/main/images/minio.png)
+
+- Настройте NiFi, как показано на скриншотах ниже:
+
+![Alt text](https://github.com/horacemtb/iot-streaming/blob/main/images/ni-fi.png)
+![Alt text](https://github.com/horacemtb/iot-streaming/blob/main/images/ni-fi_listenhttp_config.png)
+![Alt text](https://github.com/horacemtb/iot-streaming/blob/main/images/ni-fi_mergecontent_config.png)
+![Alt text](https://github.com/horacemtb/iot-streaming/blob/main/images/ni-fi_executescript_config.png)
+![Alt text](https://github.com/horacemtb/iot-streaming/blob/main/images/ni-fi_updateattribute_config.png)
+![Alt text](https://github.com/horacemtb/iot-streaming/blob/main/images/ni-fi_puts3object_config.png)
+
+4. Запустите конвейер данных:
+
+На виртуальной машине dmitry-airflow:
+
+- Запустите DAG-и create_dds_dag и create_datamart_dag для создания пустых таблиц слоёв DDS и DataMart.
+- Запустите DAG-и s3_to_dds_dag и dds_to_dm_dag для начала обработки данных.
+
+5. Запустите генерацию данных:
+
+На виртуальной машине dmitry-de выберите один из следующих вариантов для генерации данных:
+
+- Синтетические данные:
+
+```
+python3 generate_dummy_data.py --url http://127.0.0.1:8081/loglistener --requests_per_second 10 --total_requests 10000
+```
+
+- Реальные данные:
+
+```
+python3 generate_real_data.py --csv_file raw-data/iot_telemetry_data.csv --url http://127.0.0.1:8081/loglistener --requests_per_second 100
+```
+
+6. Проверьте, что данные обрабатываются корректно, а у контейнера Metabase есть покдключение к таблицам слоя DataMart:
+
+![Alt text](https://github.com/horacemtb/iot-streaming/blob/main/images/send_real_data.png)
+
+- Убедитесь, что DAG-и Airflow успешно завершены в соответствии с заданным расписанием:
+
+![Alt text](https://github.com/horacemtb/iot-streaming/blob/main/images/s3_to_dds_dag.png)
+![Alt text](https://github.com/horacemtb/iot-streaming/blob/main/images/dds_to_dm_dag.png)
+
+- Откройте интерфейс Metabase, чтобы убедиться, что данные из таблиц DataMart были успешно загружены:
+
+![Alt text](https://github.com/horacemtb/iot-streaming/blob/main/images/metabase_connected.png)
