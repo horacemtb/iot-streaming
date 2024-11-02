@@ -12,7 +12,7 @@ https://www.kaggle.com/datasets/garystafford/environmental-sensor-data-132k
 
 An overview of the project’s architecture, illustrating data flow from ingestion to storage and analysis.
 
-....................
+![Alt text]()
 
 ## Components
 
@@ -86,7 +86,65 @@ A detailed breakdown of each component in the pipeline, including their roles in
 
 A step-by-step description of the data processing flow, from raw data ingestion to transformations, aggregations, and visualizations.
 
-....................
+1. __Data Generation and Ingestion__
+
+- __Data Generation__: The system simulates IoT data for environmental conditions. Each record is sent as a single string, with all features (timestamp, device_id, co, humidity, lpg, smoke, temperature, light) separated by spaces. Data generation can be done in two ways:
+
+    - __Dummy Data Generation__: The generate_dummy_data.py script generates random values for each feature, including extreme outliers and missing values, to simulate real-world device malfunctions. It sends these records as HTTP POST requests to an Apache NiFi endpoint. Key arguments include: 
+
+        - url: NiFi endpoint
+        - requests_per_second: Number of requests per second for each device
+        - total_requests: Total number of requests for each device
+
+    - __Real Data Generation__: The generate_real_data.py script reads actual historical IoT data from a CSV file located in the raw-data folder and sends each row as a string in an HTTP POST request to NiFi. Key arguments include:
+
+        - csv_file: Path to the file with real data
+        - url: NiFi endpoint
+        - requests_per_second: Number of requests per second for each device
+
+- __Data Ingestion with Apache NiFi__:
+
+    - ListenHTTP: NiFi’s ListenHTTP processor receives each HTTP POST request and captures each line of data.
+    - MergeContent: The MergeContent processor groups 1,000 records into a single .txt file for easier storage.
+    - After batching records, NiFi extracts the timestamp from the last line in a batch and uses it as the filename.
+    - PutS3Object: Each file is uploaded to MinIO storage with filenames set to the extracted timestamp, simplifying file retrieval.
+
+2. __Data Storage in MinIO__
+
+The .txt files from the ingestion process are stored in the env-telemetry-data bucket in MinIO.
+
+3. __Data Transformation and Loading into PostgreSQL DDS__
+
+The s3_to_dds_dag.py DAG in Airflow is set to run every 15 minutes, performing the following steps:
+
+- Retrieves the latest timestamp from the DDS layer and selects all new .txt files from MinIO with names later than the latest timestamp.
+- Each .txt file is broken into individual records, converted into a single pandas DataFrame.
+- Filters data to include only full minutes.
+- Groups the data by minute to calculate average values for key features.
+- Cleans the data, removing rows with NaN values or unusually large values.
+- Loads the transformed data into the DDS layer in PostgreSQL as structured, time-series records.
+
+4. __Aggregation and Feature Engineering in the DataMart Layer__
+
+The dds_to_dm_dag.py DAG in Airflow is set to run every 60 minutes, performing the following tasks:
+
+- Retrieves the latest timestamp from the DataMart layer and selects all records from the DDS layer later than this timestamp. 
+- Filters data to include only full hours.
+- Groups data by hour to calculate features for data analysis and machine learning, populating the following tables:
+
+    - dm_iot_average: Stores hourly averages for each variable.
+    - dm_iot_extreme: Stores maximum and minimum values for each variable, capturing environmental extremes.
+    - dm_iot_count: Tracks the number of records per hour per device.
+    - dm_iot_ml: Contains features for machine learning, such as hourly changes, ratios, and other statistical metrics.
+
+- Aggregated data is saved in the DataMart layer tables.
+
+5. Business Intelligence and Visualization in Metabase
+
+- Metabase connects to PostgreSQL, allowing direct access to the DataMart tables for querying and visualization.
+- Key metrics, including averages, minimums, and maximums for temperature, humidity, CO, LPG, and smoke, are tracked with time-series plots.
+- Users can filter data by device_id and time range.
+- A dedicated tab monitors the number of records per hour (expected at 60) to ensure system performance is consistent.
 
 ## Settings and Commands
 
