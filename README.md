@@ -12,7 +12,7 @@ https://www.kaggle.com/datasets/garystafford/environmental-sensor-data-132k
 
 An overview of the project’s architecture, illustrating data flow from ingestion to storage and analysis.
 
-![Alt text]()
+![Alt text](https://github.com/horacemtb/iot-streaming/blob/main/images/iot-streaming.png)
 
 ## Components
 
@@ -139,7 +139,7 @@ The dds_to_dm_dag.py DAG in Airflow is set to run every 60 minutes, performing t
 
 - Aggregated data is saved in the DataMart layer tables.
 
-5. Business Intelligence and Visualization in Metabase
+5. __Business Intelligence and Visualization in Metabase__
 
 - Metabase connects to PostgreSQL, allowing direct access to the DataMart tables for querying and visualization.
 - Key metrics, including averages, minimums, and maximums for temperature, humidity, CO, LPG, and smoke, are tracked with time-series plots.
