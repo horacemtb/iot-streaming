@@ -6,6 +6,7 @@ from datetime import datetime
 from loguru import logger
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+
 # Function to generate a random data entry for a device
 def generate_data_entry(device_id):
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
@@ -26,6 +27,7 @@ def generate_data_entry(device_id):
 
     return f"{timestamp} {device_id} {co} {humidity} {lpg} {smoke} {temperature} {light}"
 
+
 # Function to send data to NiFi for a single device
 def send_data(device_id, url, total_requests, request_interval):
     for _ in range(total_requests):
@@ -39,6 +41,7 @@ def send_data(device_id, url, total_requests, request_interval):
         except requests.RequestException as e:
             logger.error(f"Error sending data: {e}")
         time.sleep(request_interval)
+
 
 # Main function to coordinate the data sending process for all devices
 def send_data_to_nifi(url, requests_per_second, total_requests):
@@ -57,11 +60,12 @@ def send_data_to_nifi(url, requests_per_second, total_requests):
             except Exception as e:
                 logger.error(f"Thread error: {e}")
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Send IoT data to NiFi')
     parser.add_argument('--url', type=str, required=True, help='NiFi listener URL (e.g., http://127.0.0.1:8081/loglistener)')
     parser.add_argument('--requests_per_second', type=int, default=5, help='Number of requests per second per device')
     parser.add_argument('--total_requests', type=int, default=1000, help='Total number of requests to send per device')
-    
+
     args = parser.parse_args()
     send_data_to_nifi(args.url, args.requests_per_second, args.total_requests)
