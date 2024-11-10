@@ -258,9 +258,9 @@ python3 generate_dummy_data.py --url http://127.0.0.1:8081/loglistener --request
 python3 generate_real_data.py --csv_file raw-data/iot_telemetry_data.csv --url http://127.0.0.1:8081/loglistener --requests_per_second 10
 ```
 
-6. Проверьте, что данные обрабатываются корректно, а у контейнера Metabase есть покдключение к таблицам слоя DataMart:
-
 ![Alt text](https://github.com/horacemtb/iot-streaming/blob/main/images/send_real_data.png)
+
+6. Проверьте, что данные обрабатываются корректно, а у контейнера Metabase есть покдключение к таблицам слоя DataMart:
 
 - Убедитесь, что DAG-и Airflow успешно завершены в соответствии с заданным расписанием:
 

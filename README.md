@@ -260,9 +260,9 @@ python3 generate_dummy_data.py --url http://127.0.0.1:8081/loglistener --request
 python3 generate_real_data.py --csv_file raw-data/iot_telemetry_data.csv --url http://127.0.0.1:8081/loglistener --requests_per_second 10
 ```
 
-6. Verify Data Processing and Visualization:
-
 ![Alt text](https://github.com/horacemtb/iot-streaming/blob/main/images/send_real_data.png)
+
+6. Verify Data Processing and Visualization:
 
 - Ensure the Airflow DAGs have completed successfully according to the defined schedule:
 
